@@ -1,0 +1,18 @@
+[
+  {
+    "id": "1",
+    "codigo": "DESCONTO10",
+    "descricao": "10% de desconto no pedido",
+    "tipo": "percentual",
+    "valor": 10,
+    "ativo": true
+  },
+  {
+    "id": "2",
+    "codigo": "PROMO20",
+    "descricao": "R$ 20,00 de desconto no pedido",
+    "tipo": "valor",
+    "valor": 20,
+    "ativo": true
+  }
+]

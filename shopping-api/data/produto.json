@@ -1,0 +1,47 @@
+[
+  {
+    "id": "1",
+    "nome": "Arroz Integral 1kg",
+    "descricao": "Arroz integral selecionado para o dia a dia.",
+    "categoria": "Alimentos",
+    "preco": 12.9,
+    "estoque": 40,
+    "imagem": "https://picsum.photos/seed/arroz/600/600"
+  },
+  {
+    "id": "2",
+    "nome": "Fone Bluetooth",
+    "descricao": "Fone sem fio com boa autonomia de bateria.",
+    "categoria": "Eletronicos",
+    "preco": 149.9,
+    "estoque": 18,
+    "imagem": "https://picsum.photos/seed/fone/600/600"
+  },
+  {
+    "id": "3",
+    "nome": "Camiseta Basica",
+    "descricao": "Camiseta de algodao com caimento confortavel.",
+    "categoria": "Moda",
+    "preco": 59.9,
+    "estoque": 25,
+    "imagem": "https://picsum.photos/seed/camiseta/600/600"
+  },
+  {
+    "id": "4",
+    "nome": "Luminaria de Mesa",
+    "descricao": "Luminaria LED para estudo, trabalho e leitura.",
+    "categoria": "Casa",
+    "preco": 89.9,
+    "estoque": 12,
+    "imagem": "https://picsum.photos/seed/luminaria/600/600"
+  },
+  {
+    "id": "5",
+    "nome": "Cafe Especial 500g",
+    "descricao": "Cafe torrado em graos com notas de chocolate.",
+    "categoria": "Alimentos",
+    "preco": 34.9,
+    "estoque": 30,
+    "imagem": "https://picsum.photos/seed/cafe/600/600"
+  }
+]

@@ -1,0 +1,127 @@
+export type ApiProduct = {
+  id: string;
+  nome: string;
+  descricao: string;
+  categoria: string;
+  preco: number;
+  estoque: number;
+  imagem: string;
+};
+
+export type ApiCoupon = {
+  id: string;
+  codigo: string;
+  descricao: string;
+  tipo: 'percentual' | 'valor';
+  valor: number;
+  ativo: boolean;
+};
+
+export type ApiCartItem = {
+  id: string;
+  produtoId: string;
+  quantidade: number;
+  produto: ApiProduct;
+  total: number;
+};
+
+export type CartSummary = {
+  itens: ApiCartItem[];
+  subtotal: number;
+  frete: number;
+  desconto: number;
+  total: number;
+  cupomAplicado: ApiCoupon | null;
+};
+
+export type ProductFilters = {
+  nome?: string;
+  categoria?: string;
+};
+
+const apiBaseUrl = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000';
+
+async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(`${apiBaseUrl}${path}`, {
+    ...init,
+    headers: {
+      'Content-Type': 'application/json',
+      ...init?.headers,
+    },
+  });
+
+  if (!response.ok) {
+    let message = `Erro HTTP ${response.status}`;
+
+    try {
+      const error = (await response.json()) as { message?: string };
+      message = error.message ?? message;
+    } catch {
+      // Keep the generic HTTP message when the API does not return JSON.
+    }
+
+    throw new Error(message);
+  }
+
+  return response.json() as Promise<T>;
+}
+
+function buildQuery(params: Record<string, string | undefined>) {
+  const query = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(params)) {
+    if (value) {
+      query.set(key, value);
+    }
+  }
+
+  const queryString = query.toString();
+  return queryString ? `?${queryString}` : '';
+}
+
+export function getProducts(filters: ProductFilters = {}) {
+  return apiFetch<ApiProduct[]>(
+    `/produto${buildQuery({
+      categoria: filters.categoria,
+      nome: filters.nome,
+    })}`
+  );
+}
+
+export function getProduct(productId: string) {
+  return apiFetch<ApiProduct>(`/produto/${productId}`);
+}
+
+export function getCoupons() {
+  return apiFetch<ApiCoupon[]>('/cupom');
+}
+
+export function getCartSummary(couponCode?: string) {
+  return apiFetch<CartSummary>(`/carrinho/resumo${buildQuery({ cupom: couponCode })}`);
+}
+
+export function addCartItem(productId: string, quantity = 1) {
+  return apiFetch<ApiCartItem>('/carrinho', {
+    body: JSON.stringify({ produtoId: productId, quantidade: quantity }),
+    method: 'POST',
+  });
+}
+
+export function updateCartItemQuantity(cartItemId: string, quantity: number) {
+  return apiFetch<ApiCartItem>(`/carrinho/${cartItemId}`, {
+    body: JSON.stringify({ quantidade: quantity }),
+    method: 'PUT',
+  });
+}
+
+export function removeCartItem(cartItemId: string) {
+  return apiFetch<ApiCartItem>(`/carrinho/${cartItemId}`, {
+    method: 'DELETE',
+  });
+}
+
+export function clearCart() {
+  return apiFetch<{ message: string }>('/carrinho', {
+    method: 'DELETE',
+  });
+}

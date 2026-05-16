@@ -1,50 +1,113 @@
-# Welcome to your Expo app 👋
+# ShoppingCart
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Aplicativo mobile de carrinho de compras desenvolvido com Expo, React Native e Expo Router.
 
-## Get started
+## Funcionalidades
 
-1. Install dependencies
+- Navegacao por abas: inicio, busca, carrinho e perfil
+- Listagem de produtos
+- Busca por nome e por categoria
+- Marcar e desmarcar produtos como favoritos
+- Tela de detalhes do produto
+- Carrinho com controle de quantidade
+- Calculo automatico de subtotal, entrega e total em Real
+- Fluxo de checkout, envio e pagamento
+- Tela de perfil com editar perfil e sair da conta
 
-   ```bash
-   npm install
-   ```
+## Tecnologias
 
-2. Start the app
+- Expo
+- React Native
+- TypeScript
+- Expo Router
+- React Navigation
+- Expo Vector Icons
 
-   ```bash
-   npx expo start
-   ```
+## Como executar
 
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+Antes de abrir o app, suba a API JSON que fica na pasta `shopping-api`:
 
 ```bash
-npm run reset-project
+cd shopping-api
+npm install
+npm run dev
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Por padrao a API roda em:
 
-## Learn more
+```text
+http://localhost:3000
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+Se precisar usar outra URL, configure:
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```bash
+EXPO_PUBLIC_API_URL=http://localhost:3000
+```
 
-## Join the community
+Instale as dependencias:
 
-Join our community of developers creating universal apps.
+```bash
+npm install
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Inicie o projeto:
+
+```bash
+npm start
+```
+
+Depois, use as opcoes do terminal para abrir no Expo Go, Android, iOS ou web.
+
+## Scripts
+
+```bash
+npm start
+npm run android
+npm run ios
+npm run web
+npm run lint
+```
+
+## Estrutura
+
+```text
+app/          Rotas e layouts do Expo Router
+screens/      Telas da aplicacao
+components/   Componentes reutilizaveis
+constants/    Dados e constantes
+contexts/     Estados compartilhados
+hooks/        Hooks reutilizaveis
+services/     Cliente da API
+shopping-api/ API JSON consumida pelo app
+assets/       Imagens e icones
+```
+
+## API
+
+O app consome os endpoints da `shopping-api`:
+
+```text
+GET    /produto
+GET    /produto/:id
+GET    /cupom
+GET    /carrinho/resumo
+POST   /carrinho
+PUT    /carrinho/:id
+DELETE /carrinho/:id
+DELETE /carrinho
+```
+
+## Validacao
+
+Execute o lint:
+
+```bash
+npm run lint
+```
+
+Execute a checagem de tipos:
+
+```bash
+npx tsc --noEmit
+```
