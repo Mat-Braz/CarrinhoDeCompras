@@ -96,6 +96,46 @@ export function getCoupons() {
   return apiFetch<ApiCoupon[]>('/cupom');
 }
 
+export function createProduct(product: Omit<ApiProduct, 'id'>) {
+  return apiFetch<ApiProduct>('/produto', {
+    body: JSON.stringify(product),
+    method: 'POST',
+  });
+}
+
+export function updateProduct(productId: string, product: Omit<ApiProduct, 'id'>) {
+  return apiFetch<ApiProduct>(`/produto/${productId}`, {
+    body: JSON.stringify(product),
+    method: 'PUT',
+  });
+}
+
+export function deleteProduct(productId: string) {
+  return apiFetch<ApiProduct>(`/produto/${productId}`, {
+    method: 'DELETE',
+  });
+}
+
+export function createCoupon(coupon: Omit<ApiCoupon, 'id'>) {
+  return apiFetch<ApiCoupon>('/cupom', {
+    body: JSON.stringify(coupon),
+    method: 'POST',
+  });
+}
+
+export function updateCoupon(couponId: string, coupon: Omit<ApiCoupon, 'id'>) {
+  return apiFetch<ApiCoupon>(`/cupom/${couponId}`, {
+    body: JSON.stringify(coupon),
+    method: 'PUT',
+  });
+}
+
+export function deleteCoupon(couponId: string) {
+  return apiFetch<ApiCoupon>(`/cupom/${couponId}`, {
+    method: 'DELETE',
+  });
+}
+
 export function getCartSummary(couponCode?: string) {
   return apiFetch<CartSummary>(`/carrinho/resumo${buildQuery({ cupom: couponCode })}`);
 }

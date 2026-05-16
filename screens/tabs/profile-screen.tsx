@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { Link } from "expo-router";
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
@@ -44,6 +45,14 @@ export default function ProfileScreen() {
           </Text>
         </View>
       ))}
+      <Link href="/admin" asChild>
+        <Pressable accessibilityRole="button" style={styles.row}>
+          <IconButton icon="shield-checkmark-outline" />
+          <Text selectable style={styles.rowText}>
+            Painel administrativo
+          </Text>
+        </Pressable>
+      </Link>
       <Pressable
         accessibilityLabel="Sair da conta"
         accessibilityRole="button"

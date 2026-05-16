@@ -22,6 +22,7 @@ export default function RootLayout() {
           <Stack.Screen name="checkout" options={{ headerShown: false }} />
           <Stack.Screen name="shipping" options={{ headerShown: false }} />
           <Stack.Screen name="payment" options={{ headerShown: false }} />
+          <Stack.Screen name="admin" options={{ headerShown: false }} />
           <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
         </Stack>
       </FavoritesProvider>

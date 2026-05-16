@@ -13,6 +13,7 @@ Aplicativo mobile de carrinho de compras desenvolvido com Expo, React Native e E
 - Calculo automatico de subtotal, entrega e total em Real
 - Fluxo de checkout, envio e pagamento
 - Tela de perfil com editar perfil e sair da conta
+- Painel administrativo para criar, editar, excluir e buscar produtos e cupons
 
 ## Tecnologias
 
@@ -91,6 +92,9 @@ O app consome os endpoints da `shopping-api`:
 GET    /produto
 GET    /produto/:id
 GET    /cupom
+POST   /cupom
+PUT    /cupom/:id
+DELETE /cupom/:id
 GET    /carrinho/resumo
 POST   /carrinho
 PUT    /carrinho/:id
