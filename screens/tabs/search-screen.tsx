@@ -8,6 +8,7 @@ import { getProducts } from '@/services/shop-api';
 export default function SearchScreen() {
   const [searchTerm, setSearchTerm] = React.useState('');
   const [selectedCategory, setSelectedCategory] = React.useState('Todos');
+  const hasSearchTerm = searchTerm.trim().length > 0;
   const categoryFilter = selectedCategory === 'Todos' ? undefined : selectedCategory;
   const { data: allProducts } = useApiQuery(() => getProducts(), 'all-products');
   const { data: filteredProducts, error, loading } = useApiQuery(
@@ -33,23 +34,25 @@ export default function SearchScreen() {
         value={searchTerm}
         onChangeText={setSearchTerm}
       />
-      <View style={styles.chips}>
-        {categories.map((category) => {
-          const isActive = selectedCategory === category;
+      {!hasSearchTerm && (
+        <View style={styles.chips}>
+          {categories.map((category) => {
+            const isActive = selectedCategory === category;
 
-          return (
-          <Pressable
-            key={category}
-            onPress={() => setSelectedCategory(category)}
-            style={[styles.chip, isActive && styles.chipActive]}>
-            <Text selectable style={[styles.chipText, isActive && styles.chipTextActive]}>
-              {category}
-            </Text>
-          </Pressable>
-          );
-        })}
-      </View>
-      <SectionHeader title="Produtos populares" action="Filtrar" />
+            return (
+            <Pressable
+              key={category}
+              onPress={() => setSelectedCategory(category)}
+              style={[styles.chip, isActive && styles.chipActive]}>
+              <Text selectable style={[styles.chipText, isActive && styles.chipTextActive]}>
+                {category}
+              </Text>
+            </Pressable>
+            );
+          })}
+        </View>
+      )}
+      {!hasSearchTerm && <SectionHeader title="Produtos populares" action="Filtrar" />}
       <View style={styles.productGrid}>
         {(filteredProducts ?? []).map((product) => (
           <ProductCard key={product.id} product={product} />
@@ -79,6 +82,7 @@ const styles = StyleSheet.create({
     color: palette.text,
     fontSize: 26,
     fontWeight: '900',
+    paddingTop: 18,
   },
   chips: {
     flexDirection: 'row',

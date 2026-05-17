@@ -3,6 +3,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
+import { CartCountProvider } from '@/contexts/cart-count-context';
 import { FavoritesProvider } from '@/contexts/favorites-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
@@ -16,15 +17,20 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <FavoritesProvider>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="product/[id]" options={{ headerShown: false }} />
-          <Stack.Screen name="checkout" options={{ headerShown: false }} />
-          <Stack.Screen name="shipping" options={{ headerShown: false }} />
-          <Stack.Screen name="payment" options={{ headerShown: false }} />
-          <Stack.Screen name="admin" options={{ headerShown: false }} />
-          <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-        </Stack>
+        <CartCountProvider>
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="product/[id]" options={{ headerShown: false }} />
+            <Stack.Screen name="checkout" options={{ headerShown: false }} />
+            <Stack.Screen name="shipping" options={{ headerShown: false }} />
+            <Stack.Screen name="payment" options={{ headerShown: false }} />
+            <Stack.Screen name="admin" options={{ headerShown: false }} />
+            <Stack.Screen name="profile-orders" options={{ headerShown: false }} />
+            <Stack.Screen name="profile-coupons" options={{ headerShown: false }} />
+            <Stack.Screen name="profile-favorites" options={{ headerShown: false }} />
+            <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+          </Stack>
+        </CartCountProvider>
       </FavoritesProvider>
       <StatusBar style="auto" />
     </ThemeProvider>

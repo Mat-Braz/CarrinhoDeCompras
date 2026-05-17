@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Link } from "expo-router";
+import { Link, useFocusEffect } from "expo-router";
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
@@ -22,12 +22,20 @@ const currencyFormatter = new Intl.NumberFormat("pt-BR", {
 export default function CartScreen() {
   const [selectedCoupon, setSelectedCoupon] = React.useState<string | undefined>();
   const { data: coupons } = useApiQuery(() => getCoupons(), "coupons");
-  const { clear, data: cart, decrement, error, increment, loading, remove } = useCart(selectedCoupon);
+  const { clear, data: cart, decrement, error, increment, loading, refetch, remove } = useCart(selectedCoupon);
   const items = cart?.itens ?? [];
+
+  useFocusEffect(
+    React.useCallback(() => {
+      refetch();
+    }, [refetch])
+  );
 
   return (
     <Screen>
-      <HeaderBar title="Carrinho" />
+      <View style={styles.headerOffset}>
+        <HeaderBar title="Carrinho" />
+      </View>
       {loading && (
         <Text selectable style={styles.feedbackText}>
           Carregando carrinho...
@@ -91,65 +99,72 @@ export default function CartScreen() {
         </Text>
       )}
 
-      <View style={styles.couponSection}>
-        <Text selectable style={styles.couponTitle}>
-          Cupons
-        </Text>
-        <View style={styles.couponList}>
-          <Pressable
-            onPress={() => setSelectedCoupon(undefined)}
-            style={[styles.couponChip, !selectedCoupon && styles.couponChipActive]}>
-            <Text selectable style={[styles.couponText, !selectedCoupon && styles.couponTextActive]}>
-              Sem cupom
+      {items.length > 0 && (
+        <>
+          <View style={styles.couponSection}>
+            <Text selectable style={styles.couponTitle}>
+              Cupons
             </Text>
-          </Pressable>
-          {(coupons ?? []).map((coupon) => (
-            <Pressable
-              key={coupon.id}
-              onPress={() => setSelectedCoupon(coupon.codigo)}
-              style={[
-                styles.couponChip,
-                selectedCoupon === coupon.codigo && styles.couponChipActive,
-              ]}>
-              <Text
-                selectable
-                style={[
-                  styles.couponText,
-                  selectedCoupon === coupon.codigo && styles.couponTextActive,
-                ]}>
-                {coupon.codigo}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-      </View>
+            <View style={styles.couponList}>
+              <Pressable
+                onPress={() => setSelectedCoupon(undefined)}
+                style={[styles.couponChip, !selectedCoupon && styles.couponChipActive]}>
+                <Text selectable style={[styles.couponText, !selectedCoupon && styles.couponTextActive]}>
+                  Sem cupom
+                </Text>
+              </Pressable>
+              {(coupons ?? []).map((coupon) => (
+                <Pressable
+                  key={coupon.id}
+                  onPress={() => setSelectedCoupon(coupon.codigo)}
+                  style={[
+                    styles.couponChip,
+                    selectedCoupon === coupon.codigo && styles.couponChipActive,
+                  ]}>
+                  <Text
+                    selectable
+                    style={[
+                      styles.couponText,
+                      selectedCoupon === coupon.codigo && styles.couponTextActive,
+                    ]}>
+                    {coupon.codigo}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
 
-      <View style={styles.summary}>
-        <PriceRow label="Subtotal dos produtos" value={currencyFormatter.format(cart?.subtotal ?? 0)} />
-        <PriceRow label="Subtotal da entrega" value={currencyFormatter.format(cart?.frete ?? 0)} />
-        <PriceRow label="Cupons de desconto" value={`-${currencyFormatter.format(cart?.desconto ?? 0)}`} />
-        <View style={styles.divider} />
-        <PriceRow label="Total" value={currencyFormatter.format(cart?.total ?? 0)} strong />
-        <View style={styles.summaryActions}>
-          <Pressable style={styles.clearButton} onPress={clear}>
-            <Text selectable style={styles.clearText}>
-              Limpar tudo
-            </Text>
-          </Pressable>
-          <Link href="/checkout" asChild>
-            <Pressable style={styles.checkoutButton}>
-              <Text selectable style={styles.checkoutText}>
-                Finalizar compra
-              </Text>
-            </Pressable>
-          </Link>
-        </View>
-      </View>
+          <View style={styles.summary}>
+            <PriceRow label="Subtotal dos produtos" value={currencyFormatter.format(cart?.subtotal ?? 0)} />
+            <PriceRow label="Subtotal da entrega" value={currencyFormatter.format(cart?.frete ?? 0)} />
+            <PriceRow label="Cupons de desconto" value={`-${currencyFormatter.format(cart?.desconto ?? 0)}`} />
+            <View style={styles.divider} />
+            <PriceRow label="Total" value={currencyFormatter.format(cart?.total ?? 0)} strong />
+            <View style={styles.summaryActions}>
+              <Pressable style={styles.clearButton} onPress={clear}>
+                <Text selectable style={styles.clearText}>
+                  Limpar tudo
+                </Text>
+              </Pressable>
+              <Link href="/checkout" asChild>
+                <Pressable style={styles.checkoutButton}>
+                  <Text selectable style={styles.checkoutText}>
+                    Finalizar compra
+                  </Text>
+                </Pressable>
+              </Link>
+            </View>
+          </View>
+        </>
+      )}
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  headerOffset: {
+    paddingTop: 18,
+  },
   list: {
     gap: 14,
   },

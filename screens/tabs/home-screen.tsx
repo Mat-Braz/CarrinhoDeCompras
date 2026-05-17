@@ -90,6 +90,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
     justifyContent: "space-between",
+    paddingTop: 18,
   },
   welcome: {
     color: palette.muted,

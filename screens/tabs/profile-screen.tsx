@@ -1,4 +1,3 @@
-import { Ionicons } from "@expo/vector-icons";
 import { Link } from "expo-router";
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -6,10 +5,9 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { IconButton, Screen, palette } from "@/components/shop/shop-ui";
 
 const profileOptions = [
-  { icon: "receipt-outline", label: "Pedidos" },
-  { icon: "ticket-outline", label: "Cupons" },
-  { icon: "heart-outline", label: "Produtos favoritos" },
-  { icon: "settings-outline", label: "Configuracoes" },
+  { href: "/profile-orders", icon: "receipt-outline", label: "Pedidos" },
+  { href: "/profile-coupons", icon: "ticket-outline", label: "Cupons" },
+  { href: "/profile-favorites", icon: "heart-outline", label: "Produtos favoritos" },
 ] as const;
 
 export default function ProfileScreen() {
@@ -19,31 +17,27 @@ export default function ProfileScreen() {
         Perfil
       </Text>
       <View style={styles.card}>
-        <Pressable
-          accessibilityLabel="Editar perfil"
-          accessibilityRole="button"
-          style={styles.editButton}>
-          <IconButton icon="create-outline" />
-        </Pressable>
         <View style={styles.avatar}>
           <Text selectable style={styles.avatarText}>
-            C
+            B
           </Text>
         </View>
         <Text selectable style={styles.name}>
-          Christian
+          Boer
         </Text>
         <Text selectable style={styles.email}>
-          christian@email.com
+          boer@gmail.com
         </Text>
       </View>
       {profileOptions.map((item) => (
-        <View key={item.label} style={styles.row}>
-          <IconButton icon={item.icon} />
-          <Text selectable style={styles.rowText}>
-            {item.label}
-          </Text>
-        </View>
+        <Link href={item.href} asChild key={item.label}>
+          <Pressable accessibilityRole="button" style={styles.row}>
+            <IconButton icon={item.icon} />
+            <Text selectable style={styles.rowText}>
+              {item.label}
+            </Text>
+          </Pressable>
+        </Link>
       ))}
       <Link href="/admin" asChild>
         <Pressable accessibilityRole="button" style={styles.row}>
@@ -53,17 +47,6 @@ export default function ProfileScreen() {
           </Text>
         </Pressable>
       </Link>
-      <Pressable
-        accessibilityLabel="Sair da conta"
-        accessibilityRole="button"
-        style={styles.logoutRow}>
-        <View style={styles.logoutIcon}>
-          <Ionicons name="log-out-outline" size={18} color="#fff" />
-        </View>
-        <Text selectable style={styles.logoutText}>
-          Sair da conta
-        </Text>
-      </Pressable>
     </Screen>
   );
 }
@@ -73,6 +56,7 @@ const styles = StyleSheet.create({
     color: palette.text,
     fontSize: 26,
     fontWeight: "900",
+    paddingTop: 18,
   },
   card: {
     alignItems: "center",
@@ -80,12 +64,6 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     gap: 8,
     padding: 24,
-    position: "relative",
-  },
-  editButton: {
-    position: "absolute",
-    right: 14,
-    top: 14,
   },
   avatar: {
     alignItems: "center",
@@ -120,28 +98,6 @@ const styles = StyleSheet.create({
   },
   rowText: {
     color: palette.text,
-    fontSize: 15,
-    fontWeight: "800",
-  },
-  logoutRow: {
-    alignItems: "center",
-    backgroundColor: "#d13b3b",
-    borderRadius: 18,
-    flexDirection: "row",
-    gap: 14,
-    marginTop: 4,
-    padding: 14,
-  },
-  logoutIcon: {
-    alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.16)",
-    borderRadius: 18,
-    height: 38,
-    justifyContent: "center",
-    width: 38,
-  },
-  logoutText: {
-    color: "#fff",
     fontSize: 15,
     fontWeight: "800",
   },

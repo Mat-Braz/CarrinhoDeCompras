@@ -1,9 +1,27 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { palette } from '@/components/shop/shop-ui';
+import { useCartCount } from '@/contexts/cart-count-context';
 import { Ionicons } from '@expo/vector-icons';
+
+function CartTabIcon({ color, focused }: { color: string; focused: boolean }) {
+  const { count } = useCartCount();
+  const visibleCount = Math.min(count, 99);
+
+  return (
+    <View style={styles.cartIconWrap}>
+      <Ionicons size={23} name="cart-outline" color={color} />
+      {!focused && count > 0 && (
+        <View style={styles.cartBadge}>
+          <Text style={styles.cartBadgeText}>{visibleCount}</Text>
+        </View>
+      )}
+    </View>
+  );
+}
 
 export default function TabLayout() {
   return (
@@ -45,7 +63,7 @@ export default function TabLayout() {
         name="cart"
         options={{
           title: 'Cart',
-          tabBarIcon: ({ color }) => <Ionicons size={23} name="cart-outline" color={color} />,
+          tabBarIcon: ({ color, focused }) => <CartTabIcon color={color} focused={focused} />,
         }}
       />
       <Tabs.Screen
@@ -58,3 +76,26 @@ export default function TabLayout() {
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  cartIconWrap: {
+    position: 'relative',
+  },
+  cartBadge: {
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 9,
+    minWidth: 18,
+    height: 18,
+    justifyContent: 'center',
+    paddingHorizontal: 5,
+    position: 'absolute',
+    right: -12,
+    top: -9,
+  },
+  cartBadgeText: {
+    color: palette.primary,
+    fontSize: 10,
+    fontWeight: '900',
+  },
+});

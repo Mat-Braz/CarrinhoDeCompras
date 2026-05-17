@@ -10,9 +10,13 @@ Aplicativo mobile de carrinho de compras desenvolvido com Expo, React Native e E
 - Marcar e desmarcar produtos como favoritos
 - Tela de detalhes do produto
 - Carrinho com controle de quantidade
+- Contador de itens no icone do carrinho
 - Calculo automatico de subtotal, entrega e total em Real
+- Mensagem de confirmacao ao adicionar produto no carrinho
 - Fluxo de checkout, envio e pagamento
-- Tela de perfil com editar perfil e sair da conta
+- Tela de perfil com atalhos para pedidos, cupons, favoritos e painel admin
+- Telas separadas de pedidos, cupons e favoritos sem menu inferior
+- Favoritos persistidos no armazenamento local do app
 - Painel administrativo para criar, editar, excluir e buscar produtos e cupons
 
 ## Tecnologias
@@ -40,11 +44,19 @@ Por padrao a API roda em:
 http://localhost:3000
 ```
 
-Se precisar usar outra URL, configure:
+Se estiver usando Expo Go em um celular fisico, configure a URL com o IP local do computador na rede Wi-Fi:
 
 ```bash
-EXPO_PUBLIC_API_URL=http://localhost:3000
+EXPO_PUBLIC_API_URL=http://SEU_IP_LOCAL:3000
 ```
+
+Exemplo:
+
+```bash
+EXPO_PUBLIC_API_URL=http://192.168.1.6:3000
+```
+
+No navegador ou em emuladores locais, `http://localhost:3000` normalmente funciona.
 
 Instale as dependencias:
 
@@ -91,10 +103,15 @@ O app consome os endpoints da `shopping-api`:
 ```text
 GET    /produto
 GET    /produto/:id
+POST   /produto
+PUT    /produto/:id
+DELETE /produto/:id
 GET    /cupom
+GET    /cupom/:id
 POST   /cupom
 PUT    /cupom/:id
 DELETE /cupom/:id
+GET    /carrinho
 GET    /carrinho/resumo
 POST   /carrinho
 PUT    /carrinho/:id

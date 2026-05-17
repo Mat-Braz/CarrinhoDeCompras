@@ -180,7 +180,6 @@ export function ProductCard({ product }: { product: ApiProduct }) {
               </Text>
             </View>
             <View style={styles.rating}>
-              <Ionicons name="star" size={12} color={palette.gold} />
               <Text selectable style={styles.ratingText}>
                 {product.categoria}
               </Text>
@@ -264,6 +263,7 @@ export function StepPill({ label, active = false }: { label: string; active?: bo
 
 const styles = StyleSheet.create({
   screen: {
+    flexGrow: 1,
     paddingHorizontal: 24,
     paddingTop: 20,
     paddingBottom: 112,
@@ -469,7 +469,7 @@ const styles = StyleSheet.create({
     paddingTop: 2,
   },
   ratingText: {
-    color: palette.text,
+    color: palette.primary,
     fontSize: 10,
     fontWeight: '700',
   },

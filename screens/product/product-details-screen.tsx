@@ -22,7 +22,37 @@ export default function ProductDetailsScreen() {
   const { data: products } = useApiQuery(() => getProducts(), 'details-products');
   const { add } = useCart();
   const { isFavorite, toggleFavorite } = useFavorites();
+  const [cartMessage, setCartMessage] = React.useState('');
+  const messageTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const favorite = product ? isFavorite(product.id) : false;
+
+  React.useEffect(() => {
+    return () => {
+      if (messageTimeout.current) {
+        clearTimeout(messageTimeout.current);
+      }
+    };
+  }, []);
+
+  const handleAddToCart = React.useCallback(
+    async (productId: string) => {
+      try {
+        await add(productId);
+        setCartMessage('Produto adicionado ao carrinho');
+
+        if (messageTimeout.current) {
+          clearTimeout(messageTimeout.current);
+        }
+
+        messageTimeout.current = setTimeout(() => {
+          setCartMessage('');
+        }, 2600);
+      } catch {
+        setCartMessage('Nao foi possivel adicionar ao carrinho');
+      }
+    },
+    [add]
+  );
 
   return (
     <Screen>
@@ -83,11 +113,22 @@ export default function ProductDetailsScreen() {
             {product.descricao}
           </Text>
 
-          <View style={styles.buyRow}>
-            <Pressable style={styles.cartButton} onPress={() => add(product.id)}>
-              <Ionicons name="cart-outline" size={22} color={palette.text} />
-            </Pressable>
-            <PrimaryButton label="Comprar agora" href="/checkout" onPress={() => add(product.id)} />
+          <View style={styles.bottomActions}>
+            {cartMessage && (
+              <View style={styles.cartMessage}>
+                <Ionicons name="checkmark-circle" size={18} color={palette.primary} />
+                <Text selectable style={styles.cartMessageText}>
+                  {cartMessage}
+                </Text>
+              </View>
+            )}
+
+            <View style={styles.buyRow}>
+              <Pressable style={styles.cartButton} onPress={() => handleAddToCart(product.id)}>
+                <Ionicons name="cart-outline" size={22} color={palette.text} />
+              </Pressable>
+              <PrimaryButton label="Comprar agora" href="/checkout" onPress={() => handleAddToCart(product.id)} />
+            </View>
           </View>
         </>
       )}
@@ -187,6 +228,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
   },
+  bottomActions: {
+    gap: 12,
+    marginTop: 'auto',
+  },
   cartButton: {
     alignItems: 'center',
     backgroundColor: '#fff',
@@ -194,6 +239,20 @@ const styles = StyleSheet.create({
     height: 56,
     justifyContent: 'center',
     width: 56,
+  },
+  cartMessage: {
+    alignItems: 'center',
+    backgroundColor: '#efe8ff',
+    borderRadius: 14,
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  cartMessageText: {
+    color: palette.primary,
+    fontSize: 13,
+    fontWeight: '800',
   },
   feedbackText: {
     color: palette.muted,
