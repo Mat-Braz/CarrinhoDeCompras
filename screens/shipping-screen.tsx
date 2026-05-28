@@ -1,16 +1,42 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useLocalSearchParams } from 'expo-router';
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { HeaderBar, PrimaryButton, Screen, StepPill, palette } from '@/components/shop/shop-ui';
+import { useCart } from '@/hooks/use-cart';
+import { DeliveryMethod } from '@/services/shop-api';
 
 const methods = [
-  { title: 'Regular', subtitle: 'Entrega em 3-5 dias', price: 'R$ 15,00', icon: 'cube-outline' },
-  { title: 'Expressa', subtitle: 'Entrega em 1-2 dias', price: 'R$ 29,90', icon: 'flash-outline' },
-  { title: 'Retirada', subtitle: 'Retirar na loja', price: 'R$ 0,00', icon: 'storefront-outline' },
+  { id: 'regular', title: 'Regular', subtitle: 'Entrega em 3-5 dias', price: 'R$ 15,00', icon: 'cube-outline' },
+  { id: 'expressa', title: 'Expressa', subtitle: 'Entrega em 1-2 dias', price: 'R$ 29,90', icon: 'flash-outline' },
+  { id: 'retirada', title: 'Retirada', subtitle: 'Retirar na loja', price: 'R$ 0,00', icon: 'storefront-outline' },
 ] as const;
 
 export default function ShippingScreen() {
+  const params = useLocalSearchParams<{
+    bairro?: string;
+    cidade?: string;
+    complemento?: string;
+    cupom?: string;
+    endereco?: string;
+    numero?: string;
+    uf?: string;
+  }>();
+  const couponCode = typeof params.cupom === 'string' ? params.cupom : undefined;
+  const [selectedMethod, setSelectedMethod] = React.useState<DeliveryMethod>('regular');
+  const { data: cart } = useCart(couponCode, selectedMethod);
+  const paymentParams = {
+    bairro: params.bairro ?? '',
+    cidade: params.cidade ?? '',
+    complemento: params.complemento ?? '',
+    endereco: params.endereco ?? '',
+    entrega: selectedMethod,
+    numero: params.numero ?? '',
+    uf: params.uf ?? '',
+    ...(couponCode && cart?.cupomAplicado ? { cupom: couponCode } : {}),
+  };
+
   return (
     <Screen>
       <HeaderBar title="Entrega" />
@@ -25,7 +51,7 @@ export default function ShippingScreen() {
           Endereco de entrega
         </Text>
         <Text selectable style={styles.address}>
-          3517 W. Gray St. Utica, Pennsylvania 57867
+          {params.endereco}, {params.numero} - {params.bairro}, {params.cidade}/{params.uf}
         </Text>
         <Text selectable style={styles.linkText}>
           Editar endereco
@@ -36,13 +62,19 @@ export default function ShippingScreen() {
         Opcao de entrega
       </Text>
       <View style={styles.methods}>
-        {methods.map((method, index) => (
-          <View key={method.title} style={[styles.method, index === 0 && styles.methodActive]}>
-            <View style={[styles.methodIcon, index === 0 && styles.methodIconActive]}>
+        {methods.map((method) => {
+          const active = selectedMethod === method.id;
+
+          return (
+          <Pressable
+            key={method.id}
+            onPress={() => setSelectedMethod(method.id)}
+            style={[styles.method, active && styles.methodActive]}>
+            <View style={[styles.methodIcon, active && styles.methodIconActive]}>
               <Ionicons
                 name={method.icon}
                 size={20}
-                color={index === 0 ? '#fff' : palette.primary}
+                color={active ? '#fff' : palette.primary}
               />
             </View>
             <View style={{ flex: 1 }}>
@@ -56,11 +88,21 @@ export default function ShippingScreen() {
             <Text selectable style={styles.methodPrice}>
               {method.price}
             </Text>
-          </View>
-        ))}
+          </Pressable>
+          );
+        })}
       </View>
 
-      <PrimaryButton label="Continuar para pagamento" href="/payment" />
+      <View style={styles.totalCard}>
+        <Text selectable style={styles.totalLabel}>
+          Total com entrega
+        </Text>
+        <Text selectable style={styles.totalValue}>
+          {new Intl.NumberFormat('pt-BR', { currency: 'BRL', style: 'currency' }).format(cart?.total ?? 0)}
+        </Text>
+      </View>
+
+      <PrimaryButton label="Continuar para pagamento" href={{ pathname: '/payment', params: paymentParams }} />
     </Screen>
   );
 }
@@ -137,6 +179,24 @@ const styles = StyleSheet.create({
   methodPrice: {
     color: palette.text,
     fontSize: 15,
+    fontWeight: '900',
+  },
+  totalCard: {
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 16,
+  },
+  totalLabel: {
+    color: palette.muted,
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  totalValue: {
+    color: palette.primary,
+    fontSize: 16,
     fontWeight: '900',
   },
 });

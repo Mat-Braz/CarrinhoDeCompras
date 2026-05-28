@@ -17,6 +17,10 @@ export type ApiCoupon = {
   ativo: boolean;
 };
 
+export type DeliveryMethod = 'regular' | 'expressa' | 'retirada';
+
+export type PaymentMethod = 'cartao' | 'pix' | 'paypal' | 'dinheiro';
+
 export type ApiCartItem = {
   id: string;
   produtoId: string;
@@ -32,6 +36,51 @@ export type CartSummary = {
   desconto: number;
   total: number;
   cupomAplicado: ApiCoupon | null;
+};
+
+export type CheckoutAddress = {
+  bairro: string;
+  cidade: string;
+  complemento: string;
+  endereco: string;
+  numero: string;
+  uf: string;
+};
+
+export type ApiOrder = {
+  id: string;
+  criadoEm: string;
+  endereco: CheckoutAddress;
+  entrega: DeliveryMethod;
+  formaPagamento: PaymentMethod;
+  itens: ApiCartItem[];
+  subtotal: number;
+  frete: number;
+  desconto: number;
+  total: number;
+  cupomAplicado: ApiCoupon | null;
+  status: string;
+};
+
+export type ApiNotification = {
+  id: string;
+  criadaEm: string;
+  lida: boolean;
+  mensagem: string;
+  pedidoId?: string;
+  titulo: string;
+};
+
+export type PushTokenPayload = {
+  plataforma: string;
+  token: string;
+};
+
+export type FinishCartPayload = {
+  cupom?: string;
+  endereco: CheckoutAddress;
+  entrega: DeliveryMethod;
+  formaPagamento: PaymentMethod;
 };
 
 export type ProductFilters = {
@@ -136,8 +185,10 @@ export function deleteCoupon(couponId: string) {
   });
 }
 
-export function getCartSummary(couponCode?: string) {
-  return apiFetch<CartSummary>(`/carrinho/resumo${buildQuery({ cupom: couponCode })}`);
+export function getCartSummary(couponCode?: string, deliveryMethod?: DeliveryMethod) {
+  return apiFetch<CartSummary>(
+    `/carrinho/resumo${buildQuery({ cupom: couponCode, entrega: deliveryMethod })}`
+  );
 }
 
 export function addCartItem(productId: string, quantity = 1) {
@@ -163,5 +214,27 @@ export function removeCartItem(cartItemId: string) {
 export function clearCart() {
   return apiFetch<{ message: string }>('/carrinho', {
     method: 'DELETE',
+  });
+}
+
+export function finishCart(payload: FinishCartPayload) {
+  return apiFetch<{ message: string; pedido: ApiOrder }>('/carrinho/finalizar', {
+    body: JSON.stringify(payload),
+    method: 'POST',
+  });
+}
+
+export function getOrders() {
+  return apiFetch<ApiOrder[]>('/pedido?sortBy=id&order=desc');
+}
+
+export function getNotifications() {
+  return apiFetch<ApiNotification[]>('/notificacao?sortBy=id&order=desc');
+}
+
+export function registerPushToken(payload: PushTokenPayload) {
+  return apiFetch<PushTokenPayload & { id: string }>('/push-token', {
+    body: JSON.stringify(payload),
+    method: 'POST',
   });
 }

@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import React from 'react';
-import { Alert, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Image, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { HeaderBar, Screen, palette } from '@/components/shop/shop-ui';
 import {
@@ -28,6 +29,8 @@ type ProductForm = {
   preco: string;
 };
 
+type ProductFormErrors = Partial<Record<keyof ProductForm, string>>;
+
 type CouponForm = {
   ativo: boolean;
   codigo: string;
@@ -35,6 +38,12 @@ type CouponForm = {
   tipo: ApiCoupon['tipo'];
   valor: string;
 };
+
+type CouponFormErrors = Partial<Record<keyof CouponForm, string>>;
+
+type DeleteTarget =
+  | { id: string; kind: 'coupon'; label: string }
+  | { id: string; kind: 'product'; label: string };
 
 const blankProduct: ProductForm = {
   categoria: '',
@@ -79,6 +88,96 @@ function couponToForm(coupon: ApiCoupon): CouponForm {
   };
 }
 
+function parsePositiveNumber(value: string) {
+  return Number(value.replace(',', '.'));
+}
+
+function validateProductForm(form: ProductForm) {
+  const errors: ProductFormErrors = {};
+  const price = parsePositiveNumber(form.preco);
+  const stock = Number(form.estoque);
+
+  if (!form.nome.trim()) {
+    errors.nome = 'Informe o nome do produto.';
+  }
+
+  if (!form.descricao.trim()) {
+    errors.descricao = 'Informe a descricao do produto.';
+  }
+
+  if (!form.categoria.trim()) {
+    errors.categoria = 'Informe a categoria do produto.';
+  }
+
+  if (!form.preco.trim()) {
+    errors.preco = 'Informe o preco do produto.';
+  } else if (!Number.isFinite(price) || price <= 0) {
+    errors.preco = 'Informe um preco maior que zero.';
+  }
+
+  if (!form.estoque.trim()) {
+    errors.estoque = 'Informe a quantidade em estoque.';
+  } else if (!Number.isInteger(stock) || stock < 0) {
+    errors.estoque = 'Informe um estoque inteiro igual ou maior que zero.';
+  }
+
+  if (!form.imagem.trim()) {
+    errors.imagem = 'Selecione uma imagem local do produto.';
+  }
+
+  return errors;
+}
+
+function validateCouponForm(form: CouponForm) {
+  const errors: CouponFormErrors = {};
+  const value = parsePositiveNumber(form.valor);
+
+  if (!form.codigo.trim()) {
+    errors.codigo = 'Informe o codigo do cupom.';
+  } else if (form.codigo.trim().length < 3) {
+    errors.codigo = 'O codigo deve ter pelo menos 3 caracteres.';
+  }
+
+  if (!form.descricao.trim()) {
+    errors.descricao = 'Informe a descricao do cupom.';
+  }
+
+  if (!form.tipo) {
+    errors.tipo = 'Selecione o tipo do desconto.';
+  }
+
+  if (!form.valor.trim()) {
+    errors.valor = 'Informe o valor do desconto.';
+  } else if (!Number.isFinite(value) || value <= 0) {
+    errors.valor = 'Informe um valor maior que zero.';
+  } else if (form.tipo === 'percentual' && value > 100) {
+    errors.valor = 'O percentual deve ser no maximo 100.';
+  }
+
+  return errors;
+}
+
+function productFormChanged(form: ProductForm, product: ApiProduct) {
+  return (
+    form.nome.trim() !== product.nome ||
+    form.descricao.trim() !== product.descricao ||
+    form.categoria.trim() !== product.categoria ||
+    parsePositiveNumber(form.preco) !== product.preco ||
+    Number(form.estoque) !== product.estoque ||
+    form.imagem.trim() !== product.imagem
+  );
+}
+
+function couponFormChanged(form: CouponForm, coupon: ApiCoupon) {
+  return (
+    form.codigo.trim().toUpperCase() !== coupon.codigo ||
+    form.descricao.trim() !== coupon.descricao ||
+    form.tipo !== coupon.tipo ||
+    parsePositiveNumber(form.valor) !== coupon.valor ||
+    form.ativo !== coupon.ativo
+  );
+}
+
 export default function AdminScreen() {
   const [tab, setTab] = React.useState<AdminTab>('produtos');
   const [productSearch, setProductSearch] = React.useState('');
@@ -88,9 +187,34 @@ export default function AdminScreen() {
   const [productModalVisible, setProductModalVisible] = React.useState(false);
   const [couponModalVisible, setCouponModalVisible] = React.useState(false);
   const [productForm, setProductForm] = React.useState<ProductForm>(blankProduct);
+  const [productErrors, setProductErrors] = React.useState<ProductFormErrors>({});
+  const [productFormError, setProductFormError] = React.useState('');
+  const [productSuccessMessage, setProductSuccessMessage] = React.useState('');
   const [couponForm, setCouponForm] = React.useState<CouponForm>(blankCoupon);
+  const [couponErrors, setCouponErrors] = React.useState<CouponFormErrors>({});
+  const [couponFormError, setCouponFormError] = React.useState('');
+  const [couponSuccessMessage, setCouponSuccessMessage] = React.useState('');
+  const [deleteTarget, setDeleteTarget] = React.useState<DeleteTarget | null>(null);
   const productsQuery = useApiQuery(() => getProducts(), 'admin-products');
   const couponsQuery = useApiQuery(() => getCoupons(), 'admin-coupons');
+
+  React.useEffect(() => {
+    if (!productSuccessMessage) {
+      return undefined;
+    }
+
+    const timer = setTimeout(() => setProductSuccessMessage(''), 3000);
+    return () => clearTimeout(timer);
+  }, [productSuccessMessage]);
+
+  React.useEffect(() => {
+    if (!couponSuccessMessage) {
+      return undefined;
+    }
+
+    const timer = setTimeout(() => setCouponSuccessMessage(''), 3000);
+    return () => clearTimeout(timer);
+  }, [couponSuccessMessage]);
 
   const products = React.useMemo(
     () =>
@@ -114,28 +238,88 @@ export default function AdminScreen() {
   const openProductModal = (product?: ApiProduct) => {
     setEditingProduct(product ?? null);
     setProductForm(product ? productToForm(product) : blankProduct);
+    setProductErrors({});
+    setProductFormError('');
+    setProductSuccessMessage('');
     setProductModalVisible(true);
   };
 
   const openCouponModal = (coupon?: ApiCoupon) => {
     setEditingCoupon(coupon ?? null);
     setCouponForm(coupon ? couponToForm(coupon) : blankCoupon);
+    setCouponErrors({});
+    setCouponFormError('');
+    setCouponSuccessMessage('');
     setCouponModalVisible(true);
   };
 
+  const updateProductField = (field: keyof ProductForm, value: string) => {
+    setProductForm((current) => ({ ...current, [field]: value }));
+    setProductFormError('');
+    setProductErrors((current) => {
+      if (!current[field]) {
+        return current;
+      }
+
+      const next = { ...current };
+      delete next[field];
+      return next;
+    });
+  };
+
+  const pickProductImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      allowsEditing: true,
+      base64: false,
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.85,
+    });
+
+    if (!result.canceled) {
+      updateProductField('imagem', result.assets[0].uri);
+    }
+  };
+
+  const updateCouponField = <Field extends keyof CouponForm>(
+    field: Field,
+    value: CouponForm[Field]
+  ) => {
+    setCouponForm((current) => ({ ...current, [field]: value }));
+    setCouponFormError('');
+    setCouponErrors((current) => {
+      if (!current[field]) {
+        return current;
+      }
+
+      const next = { ...current };
+      delete next[field];
+      return next;
+    });
+  };
+
   const saveProduct = async () => {
-    if (!productForm.nome.trim() || !productForm.preco.trim()) {
-      Alert.alert('Erro', 'Nome e preco sao obrigatorios.');
+    const errors = validateProductForm(productForm);
+    setProductErrors(errors);
+    setProductFormError('');
+    setProductSuccessMessage('');
+
+    if (Object.keys(errors).length) {
+      return;
+    }
+
+    const isEditing = Boolean(editingProduct);
+    if (editingProduct && !productFormChanged(productForm, editingProduct)) {
+      setProductFormError('Altere pelo menos um campo para salvar.');
       return;
     }
 
     const payload = {
       categoria: productForm.categoria.trim(),
       descricao: productForm.descricao.trim(),
-      estoque: Number(productForm.estoque) || 0,
+      estoque: Number(productForm.estoque),
       imagem: productForm.imagem.trim(),
       nome: productForm.nome.trim(),
-      preco: Number(productForm.preco.replace(',', '.')) || 0,
+      preco: parsePositiveNumber(productForm.preco),
     };
 
     try {
@@ -146,6 +330,9 @@ export default function AdminScreen() {
       }
 
       setProductModalVisible(false);
+      setProductSuccessMessage(
+        isEditing ? 'Produto atualizado com sucesso.' : 'Produto cadastrado com sucesso.'
+      );
       await productsQuery.refetch();
     } catch {
       Alert.alert('Erro', 'Nao foi possivel salvar o produto.');
@@ -153,17 +340,27 @@ export default function AdminScreen() {
   };
 
   const saveCoupon = async () => {
-    if (!couponForm.codigo.trim() || !couponForm.valor.trim()) {
-      Alert.alert('Erro', 'Codigo e valor sao obrigatorios.');
+    const errors = validateCouponForm(couponForm);
+    setCouponErrors(errors);
+    setCouponFormError('');
+    setCouponSuccessMessage('');
+
+    if (Object.keys(errors).length) {
+      return;
+    }
+
+    const isEditing = Boolean(editingCoupon);
+    if (editingCoupon && !couponFormChanged(couponForm, editingCoupon)) {
+      setCouponFormError('Altere pelo menos um campo para salvar.');
       return;
     }
 
     const payload = {
-      ativo: couponForm.ativo,
+      ativo: editingCoupon ? couponForm.ativo : true,
       codigo: couponForm.codigo.trim().toUpperCase(),
       descricao: couponForm.descricao.trim(),
       tipo: couponForm.tipo,
-      valor: Number(couponForm.valor.replace(',', '.')) || 0,
+      valor: parsePositiveNumber(couponForm.valor),
     };
 
     try {
@@ -174,6 +371,9 @@ export default function AdminScreen() {
       }
 
       setCouponModalVisible(false);
+      setCouponSuccessMessage(
+        isEditing ? 'Cupom atualizado com sucesso.' : 'Cupom cadastrado com sucesso.'
+      );
       await couponsQuery.refetch();
     } catch {
       Alert.alert('Erro', 'Nao foi possivel salvar o cupom.');
@@ -181,31 +381,36 @@ export default function AdminScreen() {
   };
 
   const confirmDeleteProduct = (product: ApiProduct) => {
-    Alert.alert('Excluir produto', `Deseja excluir ${product.nome}?`, [
-      { style: 'cancel', text: 'Cancelar' },
-      {
-        onPress: async () => {
-          await deleteProduct(product.id);
-          await productsQuery.refetch();
-        },
-        style: 'destructive',
-        text: 'Excluir',
-      },
-    ]);
+    setProductSuccessMessage('');
+    setDeleteTarget({ id: product.id, kind: 'product', label: product.nome });
   };
 
   const confirmDeleteCoupon = (coupon: ApiCoupon) => {
-    Alert.alert('Excluir cupom', `Deseja excluir ${coupon.codigo}?`, [
-      { style: 'cancel', text: 'Cancelar' },
-      {
-        onPress: async () => {
-          await deleteCoupon(coupon.id);
-          await couponsQuery.refetch();
-        },
-        style: 'destructive',
-        text: 'Excluir',
-      },
-    ]);
+    setCouponSuccessMessage('');
+    setDeleteTarget({ id: coupon.id, kind: 'coupon', label: coupon.codigo });
+  };
+
+  const deleteSelectedItem = async () => {
+    if (!deleteTarget) {
+      return;
+    }
+
+    const target = deleteTarget;
+    setDeleteTarget(null);
+
+    try {
+      if (target.kind === 'product') {
+        await deleteProduct(target.id);
+        setProductSuccessMessage('Produto excluido com sucesso.');
+        await productsQuery.refetch();
+      } else {
+        await deleteCoupon(target.id);
+        setCouponSuccessMessage('Cupom excluido com sucesso.');
+        await couponsQuery.refetch();
+      }
+    } catch {
+      Alert.alert('Erro', target.kind === 'product' ? 'Nao foi possivel excluir o produto.' : 'Nao foi possivel excluir o cupom.');
+    }
   };
 
   return (
@@ -265,6 +470,14 @@ export default function AdminScreen() {
             placeholder="Buscar produto ou categoria"
             value={productSearch}
           />
+          {productSuccessMessage ? (
+            <View style={styles.successBanner}>
+              <Ionicons name="checkmark-circle" size={18} color="#1f8f4d" />
+              <Text selectable style={styles.successText}>
+                {productSuccessMessage}
+              </Text>
+            </View>
+          ) : null}
           {products.map((product) => (
             <View key={product.id} style={styles.card}>
               <View style={styles.cardIcon}>
@@ -297,6 +510,14 @@ export default function AdminScreen() {
             placeholder="Buscar cupom"
             value={couponSearch}
           />
+          {couponSuccessMessage ? (
+            <View style={styles.successBanner}>
+              <Ionicons name="checkmark-circle" size={18} color="#1f8f4d" />
+              <Text selectable style={styles.successText}>
+                {couponSuccessMessage}
+              </Text>
+            </View>
+          ) : null}
           {coupons.map((coupon) => (
             <View key={coupon.id} style={styles.card}>
               <View style={styles.cardIcon}>
@@ -323,20 +544,31 @@ export default function AdminScreen() {
       )}
 
       <ProductModal
+        errors={productErrors}
         form={productForm}
-        onChange={setProductForm}
+        formError={productFormError}
+        onChange={updateProductField}
         onClose={() => setProductModalVisible(false)}
+        onPickImage={pickProductImage}
         onSave={saveProduct}
         title={editingProduct ? 'Editar produto' : 'Novo produto'}
         visible={productModalVisible}
       />
       <CouponModal
+        errors={couponErrors}
         form={couponForm}
-        onChange={setCouponForm}
+        formError={couponFormError}
+        isEditing={Boolean(editingCoupon)}
+        onChange={updateCouponField}
         onClose={() => setCouponModalVisible(false)}
         onSave={saveCoupon}
         title={editingCoupon ? 'Editar cupom' : 'Novo cupom'}
         visible={couponModalVisible}
+      />
+      <DeleteConfirmModal
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={deleteSelectedItem}
+        target={deleteTarget}
       />
     </Screen>
   );
@@ -391,64 +623,110 @@ function Actions({ onDelete, onEdit }: { onDelete: () => void; onEdit: () => voi
 }
 
 function ProductModal({
+  errors,
   form,
+  formError,
   onChange,
   onClose,
+  onPickImage,
   onSave,
   title,
   visible,
 }: {
+  errors: ProductFormErrors;
   form: ProductForm;
-  onChange: (form: ProductForm) => void;
+  formError: string;
+  onChange: (field: keyof ProductForm, value: string) => void;
   onClose: () => void;
+  onPickImage: () => void;
   onSave: () => void;
   title: string;
   visible: boolean;
 }) {
   return (
     <AdminModal onClose={onClose} onSave={onSave} title={title} visible={visible}>
-      <AdminInput label="Nome" onChangeText={(nome) => onChange({ ...form, nome })} value={form.nome} />
       <AdminInput
+        error={errors.nome}
+        label="Nome"
+        onChangeText={(nome) => onChange('nome', nome)}
+        value={form.nome}
+      />
+      <AdminInput
+        error={errors.descricao}
         label="Descricao"
-        onChangeText={(descricao) => onChange({ ...form, descricao })}
+        onChangeText={(descricao) => onChange('descricao', descricao)}
         value={form.descricao}
       />
       <AdminInput
+        error={errors.categoria}
         label="Categoria"
-        onChangeText={(categoria) => onChange({ ...form, categoria })}
+        onChangeText={(categoria) => onChange('categoria', categoria)}
         value={form.categoria}
       />
       <AdminInput
+        error={errors.preco}
         keyboardType="decimal-pad"
         label="Preco"
-        onChangeText={(preco) => onChange({ ...form, preco })}
+        onChangeText={(preco) => onChange('preco', preco)}
         value={form.preco}
       />
       <AdminInput
+        error={errors.estoque}
         keyboardType="number-pad"
         label="Estoque"
-        onChangeText={(estoque) => onChange({ ...form, estoque })}
+        onChangeText={(estoque) => onChange('estoque', estoque)}
         value={form.estoque}
       />
-      <AdminInput
-        label="URL da imagem"
-        onChangeText={(imagem) => onChange({ ...form, imagem })}
-        value={form.imagem}
-      />
+      <View style={styles.inputGroup}>
+        <Text selectable style={styles.inputLabel}>
+          Imagem
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          onPress={onPickImage}
+          style={[styles.uploadBox, errors.imagem && styles.inputError]}>
+          {form.imagem ? (
+            <Image source={{ uri: form.imagem }} style={styles.uploadPreview} />
+          ) : (
+            <>
+              <Ionicons name="cloud-upload-outline" size={28} color={palette.primary} />
+              <Text selectable style={styles.uploadText}>
+                Selecionar arquivo local
+              </Text>
+            </>
+          )}
+        </Pressable>
+        {errors.imagem ? (
+          <Text selectable style={styles.errorText}>
+            {errors.imagem}
+          </Text>
+        ) : null}
+      </View>
+      {formError ? (
+        <Text selectable style={styles.errorText}>
+          {formError}
+        </Text>
+      ) : null}
     </AdminModal>
   );
 }
 
 function CouponModal({
+  errors,
   form,
+  formError,
+  isEditing,
   onChange,
   onClose,
   onSave,
   title,
   visible,
 }: {
+  errors: CouponFormErrors;
   form: CouponForm;
-  onChange: (form: CouponForm) => void;
+  formError: string;
+  isEditing: boolean;
+  onChange: <Field extends keyof CouponForm>(field: Field, value: CouponForm[Field]) => void;
   onClose: () => void;
   onSave: () => void;
   title: string;
@@ -457,50 +735,112 @@ function CouponModal({
   return (
     <AdminModal onClose={onClose} onSave={onSave} title={title} visible={visible}>
       <AdminInput
+        error={errors.codigo}
         label="Codigo"
-        onChangeText={(codigo) => onChange({ ...form, codigo: codigo.toUpperCase() })}
+        onChangeText={(codigo) => onChange('codigo', codigo.toUpperCase())}
         value={form.codigo}
       />
       <AdminInput
+        error={errors.descricao}
         label="Descricao"
-        onChangeText={(descricao) => onChange({ ...form, descricao })}
+        onChangeText={(descricao) => onChange('descricao', descricao)}
         value={form.descricao}
       />
-      <View style={styles.segmented}>
-        <Pressable
-          onPress={() => onChange({ ...form, tipo: 'percentual' })}
-          style={[styles.segment, form.tipo === 'percentual' && styles.segmentActive]}>
-          <Text
-            selectable
-            style={[styles.segmentText, form.tipo === 'percentual' && styles.segmentTextActive]}>
-            Percentual
+      <View style={styles.inputGroup}>
+        <Text selectable style={styles.inputLabel}>
+          Tipo
+        </Text>
+        <View style={[styles.segmented, errors.tipo && styles.inputError]}>
+          <Pressable
+            onPress={() => onChange('tipo', 'percentual')}
+            style={[styles.segment, form.tipo === 'percentual' && styles.segmentActive]}>
+            <Text
+              selectable
+              style={[styles.segmentText, form.tipo === 'percentual' && styles.segmentTextActive]}>
+              Percentual
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => onChange('tipo', 'valor')}
+            style={[styles.segment, form.tipo === 'valor' && styles.segmentActive]}>
+            <Text selectable style={[styles.segmentText, form.tipo === 'valor' && styles.segmentTextActive]}>
+              Valor
+            </Text>
+          </Pressable>
+        </View>
+        {errors.tipo ? (
+          <Text selectable style={styles.errorText}>
+            {errors.tipo}
           </Text>
-        </Pressable>
-        <Pressable
-          onPress={() => onChange({ ...form, tipo: 'valor' })}
-          style={[styles.segment, form.tipo === 'valor' && styles.segmentActive]}>
-          <Text selectable style={[styles.segmentText, form.tipo === 'valor' && styles.segmentTextActive]}>
-            Valor
-          </Text>
-        </Pressable>
+        ) : null}
       </View>
       <AdminInput
+        error={errors.valor}
         keyboardType="decimal-pad"
         label={form.tipo === 'percentual' ? 'Valor em %' : 'Valor em R$'}
-        onChangeText={(valor) => onChange({ ...form, valor })}
+        onChangeText={(valor) => onChange('valor', valor)}
         value={form.valor}
       />
-      <Pressable onPress={() => onChange({ ...form, ativo: !form.ativo })} style={styles.switchRow}>
-        <Ionicons
-          name={form.ativo ? 'checkbox' : 'square-outline'}
-          size={22}
-          color={form.ativo ? palette.primary : palette.muted}
-        />
-        <Text selectable style={styles.switchText}>
-          Cupom ativo
+      {isEditing ? (
+        <Pressable onPress={() => onChange('ativo', !form.ativo)} style={styles.switchRow}>
+          <Ionicons
+            name={form.ativo ? 'checkbox' : 'square-outline'}
+            size={22}
+            color={form.ativo ? palette.primary : palette.muted}
+          />
+          <Text selectable style={styles.switchText}>
+            Cupom ativo
+          </Text>
+        </Pressable>
+      ) : null}
+      {formError ? (
+        <Text selectable style={styles.errorText}>
+          {formError}
         </Text>
-      </Pressable>
+      ) : null}
     </AdminModal>
+  );
+}
+
+function DeleteConfirmModal({
+  onCancel,
+  onConfirm,
+  target,
+}: {
+  onCancel: () => void;
+  onConfirm: () => void;
+  target: DeleteTarget | null;
+}) {
+  const itemLabel = target?.kind === 'product' ? 'produto' : 'cupom';
+
+  return (
+    <Modal animationType="fade" onRequestClose={onCancel} transparent visible={Boolean(target)}>
+      <View style={styles.confirmBackdrop}>
+        <View style={styles.confirmBox}>
+          <View style={styles.confirmIcon}>
+            <Ionicons name="trash-outline" size={26} color="#d13b3b" />
+          </View>
+          <Text selectable style={styles.confirmTitle}>
+            Excluir {itemLabel}
+          </Text>
+          <Text selectable style={styles.confirmMessage}>
+            Deseja excluir {target?.label}?
+          </Text>
+          <View style={styles.confirmActions}>
+            <Pressable onPress={onCancel} style={[styles.confirmButton, styles.confirmCancelButton]}>
+              <Text selectable style={styles.confirmCancelText}>
+                Nao
+              </Text>
+            </Pressable>
+            <Pressable onPress={onConfirm} style={[styles.confirmButton, styles.confirmDeleteAction]}>
+              <Text selectable style={styles.confirmDeleteText}>
+                Excluir
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    </Modal>
   );
 }
 
@@ -542,11 +882,13 @@ function AdminModal({
 }
 
 function AdminInput({
+  error,
   keyboardType = 'default',
   label,
   onChangeText,
   value,
 }: {
+  error?: string;
   keyboardType?: 'default' | 'decimal-pad' | 'number-pad';
   label: string;
   onChangeText: (value: string) => void;
@@ -561,9 +903,14 @@ function AdminInput({
         keyboardType={keyboardType}
         onChangeText={onChangeText}
         placeholderTextColor={palette.muted}
-        style={styles.input}
+        style={[styles.input, error && styles.inputError]}
         value={value}
       />
+      {error ? (
+        <Text selectable style={styles.errorText}>
+          {error}
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -646,6 +993,23 @@ const styles = StyleSheet.create({
   },
   addButtonText: {
     color: '#fff',
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  successBanner: {
+    alignItems: 'center',
+    backgroundColor: '#eaf8ef',
+    borderColor: '#bde8cc',
+    borderRadius: 14,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  successText: {
+    color: '#1f8f4d',
+    flex: 1,
     fontSize: 13,
     fontWeight: '900',
   },
@@ -751,11 +1115,42 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: '#f6f6f8',
     borderRadius: 12,
+    borderColor: '#f6f6f8',
+    borderWidth: 1,
     color: palette.text,
     fontSize: 14,
     fontWeight: '700',
     paddingHorizontal: 14,
     paddingVertical: 12,
+  },
+  inputError: {
+    borderColor: '#d13b3b',
+  },
+  errorText: {
+    color: '#d13b3b',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  uploadBox: {
+    alignItems: 'center',
+    backgroundColor: '#f6f6f8',
+    borderColor: '#f6f6f8',
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 8,
+    minHeight: 130,
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  uploadPreview: {
+    height: 160,
+    resizeMode: 'cover',
+    width: '100%',
+  },
+  uploadText: {
+    color: palette.primary,
+    fontSize: 13,
+    fontWeight: '900',
   },
   segmented: {
     backgroundColor: '#f0f0f5',
@@ -789,5 +1184,68 @@ const styles = StyleSheet.create({
     color: palette.text,
     fontSize: 14,
     fontWeight: '800',
+  },
+  confirmBackdrop: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(17, 17, 24, 0.42)',
+    flex: 1,
+    justifyContent: 'center',
+    padding: 24,
+  },
+  confirmBox: {
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    gap: 12,
+    padding: 20,
+    width: '100%',
+  },
+  confirmIcon: {
+    alignItems: 'center',
+    backgroundColor: '#ffe8e8',
+    borderRadius: 18,
+    height: 48,
+    justifyContent: 'center',
+    width: 48,
+  },
+  confirmTitle: {
+    color: palette.text,
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  confirmMessage: {
+    color: palette.muted,
+    fontSize: 14,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  confirmActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 4,
+    width: '100%',
+  },
+  confirmButton: {
+    alignItems: 'center',
+    borderRadius: 12,
+    flex: 1,
+    justifyContent: 'center',
+    minHeight: 46,
+  },
+  confirmCancelButton: {
+    backgroundColor: '#f0f0f5',
+  },
+  confirmDeleteAction: {
+    backgroundColor: '#d13b3b',
+  },
+  confirmCancelText: {
+    color: palette.text,
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  confirmDeleteText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '900',
   },
 });

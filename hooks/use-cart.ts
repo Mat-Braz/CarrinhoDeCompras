@@ -1,6 +1,7 @@
 import React from 'react';
 
 import {
+  DeliveryMethod,
   addCartItem,
   clearCart,
   getCartSummary,
@@ -11,8 +12,11 @@ import { useCartCount } from '@/contexts/cart-count-context';
 
 import { useApiQuery } from './use-api-query';
 
-export function useCart(couponCode?: string) {
-  const cartQuery = useApiQuery(() => getCartSummary(couponCode), couponCode ?? 'sem-cupom');
+export function useCart(couponCode?: string, deliveryMethod?: DeliveryMethod) {
+  const cartQuery = useApiQuery(
+    () => getCartSummary(couponCode, deliveryMethod),
+    `${couponCode ?? 'sem-cupom'}-${deliveryMethod ?? 'entrega-padrao'}`
+  );
   const { refreshCount } = useCartCount();
 
   const increment = React.useCallback(

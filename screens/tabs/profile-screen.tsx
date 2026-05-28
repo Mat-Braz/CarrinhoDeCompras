@@ -6,6 +6,7 @@ import { IconButton, Screen, palette } from "@/components/shop/shop-ui";
 
 const profileOptions = [
   { href: "/profile-orders", icon: "receipt-outline", label: "Pedidos" },
+  { href: "/profile-notifications", icon: "notifications-outline", label: "Notificacoes" },
   { href: "/profile-coupons", icon: "ticket-outline", label: "Cupons" },
   { href: "/profile-favorites", icon: "heart-outline", label: "Produtos favoritos" },
 ] as const;

@@ -1,17 +1,74 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useLocalSearchParams } from 'expo-router';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { HeaderBar, PriceRow, Screen, StepPill, palette } from '@/components/shop/shop-ui';
+import { useCartCount } from '@/contexts/cart-count-context';
 import { useCart } from '@/hooks/use-cart';
+import { DeliveryMethod, PaymentMethod, finishCart } from '@/services/shop-api';
 
 const currencyFormatter = new Intl.NumberFormat('pt-BR', {
   currency: 'BRL',
   style: 'currency',
 });
 
+const paymentMethods: { id: PaymentMethod; label: string }[] = [
+  { id: 'cartao', label: 'Cartao de credito' },
+  { id: 'pix', label: 'Pix' },
+  { id: 'paypal', label: 'PayPal' },
+  { id: 'dinheiro', label: 'Dinheiro na entrega' },
+];
+
 export default function PaymentScreen() {
-  const { data: cart } = useCart();
+  const params = useLocalSearchParams<{
+    bairro?: string;
+    cidade?: string;
+    complemento?: string;
+    cupom?: string;
+    endereco?: string;
+    entrega?: DeliveryMethod;
+    numero?: string;
+    uf?: string;
+  }>();
+  const couponCode = typeof params.cupom === 'string' ? params.cupom : undefined;
+  const deliveryMethod =
+    params.entrega === 'expressa' || params.entrega === 'retirada' || params.entrega === 'regular'
+      ? params.entrega
+      : 'regular';
+  const { refreshCount } = useCartCount();
+  const { data: cart, refetch } = useCart(couponCode, deliveryMethod);
+  const [selectedPayment, setSelectedPayment] = React.useState<PaymentMethod>('cartao');
+  const [paymentMessage, setPaymentMessage] = React.useState('');
+  const [paying, setPaying] = React.useState(false);
+
+  const handlePayment = async () => {
+    if (paying || paymentMessage) {
+      return;
+    }
+
+    try {
+      setPaying(true);
+      await finishCart({
+        cupom: cart?.cupomAplicado ? couponCode : undefined,
+        endereco: {
+          bairro: String(params.bairro ?? ''),
+          cidade: String(params.cidade ?? ''),
+          complemento: String(params.complemento ?? ''),
+          endereco: String(params.endereco ?? ''),
+          numero: String(params.numero ?? ''),
+          uf: String(params.uf ?? ''),
+        },
+        entrega: deliveryMethod,
+        formaPagamento: selectedPayment,
+      });
+      setPaymentMessage('Compra realizada com sucesso.');
+      await refetch();
+      await refreshCount();
+    } finally {
+      setPaying(false);
+    }
+  };
 
   return (
     <Screen>
@@ -53,14 +110,21 @@ export default function PaymentScreen() {
       </View>
 
       <View style={styles.paymentList}>
-        {['Cartao de credito', 'Pix', 'PayPal', 'Dinheiro na entrega'].map((item, index) => (
-          <View key={item} style={[styles.paymentRow, index === 0 && styles.paymentActive]}>
-            <View style={[styles.radio, index === 0 && styles.radioActive]} />
+        {paymentMethods.map((item) => {
+          const active = selectedPayment === item.id;
+
+          return (
+          <Pressable
+            key={item.id}
+            onPress={() => setSelectedPayment(item.id)}
+            style={[styles.paymentRow, active && styles.paymentActive]}>
+            <View style={[styles.radio, active && styles.radioActive]} />
             <Text selectable style={styles.paymentText}>
-              {item}
+              {item.label}
             </Text>
-          </View>
-        ))}
+          </Pressable>
+          );
+        })}
       </View>
 
       <View style={styles.summary}>
@@ -69,9 +133,14 @@ export default function PaymentScreen() {
         <PriceRow label="Desconto" value={`-${currencyFormatter.format(cart?.desconto ?? 0)}`} />
         <View style={styles.divider} />
         <PriceRow label="Total" value={currencyFormatter.format(cart?.total ?? 0)} strong />
-        <Pressable style={styles.payButton}>
+        {paymentMessage ? (
+          <Text selectable style={styles.paymentMessage}>
+            {paymentMessage}
+          </Text>
+        ) : null}
+        <Pressable onPress={handlePayment} style={styles.payButton}>
           <Text selectable style={styles.payText}>
-            Pagar agora
+            {paying ? 'Processando...' : 'Comprar agora'}
           </Text>
         </Pressable>
       </View>
@@ -175,5 +244,11 @@ const styles = StyleSheet.create({
     color: palette.text,
     fontSize: 14,
     fontWeight: '900',
+  },
+  paymentMessage: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '900',
+    textAlign: 'center',
   },
 });

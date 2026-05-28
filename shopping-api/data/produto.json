@@ -1,30 +1,12 @@
 [
   {
-    "id": "1",
-    "nome": "Arroz Integral 1kg",
-    "descricao": "Arroz integral selecionado para o dia a dia.",
     "categoria": "Alimentos",
+    "descricao": "Arroz integral selecionado para o dia a dia.",
+    "estoque": 30,
+    "imagem": "https://picsum.photos/seed/arroz/600/600",
+    "nome": "Arroz Integral 1kg",
     "preco": 12.9,
-    "estoque": 40,
-    "imagem": "https://picsum.photos/seed/arroz/600/600"
-  },
-  {
-    "id": "2",
-    "nome": "Fone Bluetooth",
-    "descricao": "Fone sem fio com boa autonomia de bateria.",
-    "categoria": "Eletronicos",
-    "preco": 149.9,
-    "estoque": 18,
-    "imagem": "https://picsum.photos/seed/fone/600/600"
-  },
-  {
-    "id": "3",
-    "nome": "Camiseta Basica",
-    "descricao": "Camiseta de algodao com caimento confortavel.",
-    "categoria": "Moda",
-    "preco": 59.9,
-    "estoque": 25,
-    "imagem": "https://picsum.photos/seed/camiseta/600/600"
+    "id": "1"
   },
   {
     "id": "4",
@@ -43,5 +25,14 @@
     "preco": 34.9,
     "estoque": 30,
     "imagem": "https://picsum.photos/seed/cafe/600/600"
+  },
+  {
+    "categoria": "Veículo",
+    "descricao": "Carro Massa",
+    "estoque": 1,
+    "imagem": "blob:http://localhost:8081/1d1d244e-bb83-4708-9b31-d272804cfd11",
+    "nome": "Shelby Cobra",
+    "preco": 900000,
+    "id": "6"
   }
 ]

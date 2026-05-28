@@ -8,11 +8,11 @@
     "ativo": true
   },
   {
-    "id": "2",
-    "codigo": "PROMO20",
-    "descricao": "R$ 20,00 de desconto no pedido",
-    "tipo": "valor",
-    "valor": 20,
-    "ativo": true
+    "ativo": true,
+    "codigo": "PROMO50",
+    "descricao": "Desconto de 50% na primeira compra",
+    "tipo": "percentual",
+    "valor": 50,
+    "id": "2"
   }
 ]

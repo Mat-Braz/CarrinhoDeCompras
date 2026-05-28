@@ -34,7 +34,11 @@ export default function HomeScreen() {
               <IconButton icon="search" />
             </Pressable>
           </Link>
-          <IconButton icon="notifications-outline" />
+          <Link href="/profile-notifications" asChild>
+            <Pressable>
+              <IconButton icon="notifications-outline" />
+            </Pressable>
+          </Link>
         </View>
       </View>
 

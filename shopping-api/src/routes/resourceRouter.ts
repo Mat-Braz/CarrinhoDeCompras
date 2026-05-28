@@ -90,7 +90,10 @@ export function createResourceRouter(resource: string): Router {
   // POST /:resource — create a new record
   router.post("/", (req: Request, res: Response) => {
     const data = readData(resource);
-    const body = req.body as Omit<DataRecord, "id">;
+    const body = {
+      ...(req.body as Omit<DataRecord, "id">),
+      ...(resource === "cupom" ? { ativo: true } : {}),
+    };
     const newItem: DataRecord = {
       ...body,
       id: nextId(data),

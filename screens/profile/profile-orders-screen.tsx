@@ -2,10 +2,24 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { HeaderBar, Screen, palette } from '@/components/shop/shop-ui';
+import { useApiQuery } from '@/hooks/use-api-query';
+import { getOrders } from '@/services/shop-api';
 
-const completedOrders: { id: string; date: string; total: string; status: string }[] = [];
+const currencyFormatter = new Intl.NumberFormat('pt-BR', {
+  currency: 'BRL',
+  style: 'currency',
+});
+
+const dateFormatter = new Intl.DateTimeFormat('pt-BR', {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+});
 
 export default function ProfileOrdersScreen() {
+  const ordersQuery = useApiQuery(() => getOrders(), 'profile-orders');
+  const completedOrders = ordersQuery.data ?? [];
+
   return (
     <Screen>
       <View style={styles.headerOffset}>
@@ -14,7 +28,17 @@ export default function ProfileOrdersScreen() {
       <Text selectable style={styles.sectionTitle}>
         Pedidos concluidos
       </Text>
-      {completedOrders.length === 0 ? (
+      {ordersQuery.loading ? (
+        <Text selectable style={styles.emptyText}>
+          Carregando pedidos...
+        </Text>
+      ) : null}
+      {ordersQuery.error ? (
+        <Text selectable style={styles.emptyText}>
+          Nao foi possivel carregar os pedidos.
+        </Text>
+      ) : null}
+      {!ordersQuery.loading && completedOrders.length === 0 ? (
         <Text selectable style={styles.emptyText}>
           Nenhum pedido concluido.
         </Text>
@@ -25,7 +49,10 @@ export default function ProfileOrdersScreen() {
               Pedido {order.id}
             </Text>
             <Text selectable style={styles.cardText}>
-              {order.date} - {order.total}
+              {dateFormatter.format(new Date(order.criadoEm))} - {currencyFormatter.format(order.total)}
+            </Text>
+            <Text selectable style={styles.cardText}>
+              {order.itens.length} item(ns) - {order.formaPagamento}
             </Text>
             <Text selectable style={styles.cardAccent}>
               {order.status}

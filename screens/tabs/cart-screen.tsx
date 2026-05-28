@@ -21,14 +21,26 @@ const currencyFormatter = new Intl.NumberFormat("pt-BR", {
 
 export default function CartScreen() {
   const [selectedCoupon, setSelectedCoupon] = React.useState<string | undefined>();
-  const { data: coupons } = useApiQuery(() => getCoupons(), "coupons");
+  const couponsQuery = useApiQuery(() => getCoupons(), "coupons");
+  const { data: coupons, refetch: refetchCoupons } = couponsQuery;
   const { clear, data: cart, decrement, error, increment, loading, refetch, remove } = useCart(selectedCoupon);
   const items = cart?.itens ?? [];
+  const activeCoupons = React.useMemo(
+    () => (coupons ?? []).filter((coupon) => coupon.ativo),
+    [coupons]
+  );
+
+  React.useEffect(() => {
+    if (selectedCoupon && !activeCoupons.some((coupon) => coupon.codigo === selectedCoupon)) {
+      setSelectedCoupon(undefined);
+    }
+  }, [activeCoupons, selectedCoupon]);
 
   useFocusEffect(
     React.useCallback(() => {
       refetch();
-    }, [refetch])
+      refetchCoupons();
+    }, [refetch, refetchCoupons])
   );
 
   return (
@@ -113,7 +125,7 @@ export default function CartScreen() {
                   Sem cupom
                 </Text>
               </Pressable>
-              {(coupons ?? []).map((coupon) => (
+              {activeCoupons.map((coupon) => (
                 <Pressable
                   key={coupon.id}
                   onPress={() => setSelectedCoupon(coupon.codigo)}
@@ -146,7 +158,12 @@ export default function CartScreen() {
                   Limpar tudo
                 </Text>
               </Pressable>
-              <Link href="/checkout" asChild>
+              <Link
+                href={{
+                  pathname: "/checkout",
+                  params: selectedCoupon ? { cupom: selectedCoupon } : {},
+                }}
+                asChild>
                 <Pressable style={styles.checkoutButton}>
                   <Text selectable style={styles.checkoutText}>
                     Finalizar compra
